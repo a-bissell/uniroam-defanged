@@ -28,6 +28,8 @@ logger = logging.getLogger("simulator.robot")
 class SimulatedRobot:
     """A virtual Unitree Go2 robot."""
 
+    infection_log: list = []
+
     def __init__(self, robot_id: str, name: str, address: str,
                  position: tuple[float, float] = (0.0, 0.0),
                  c2_url: str = "http://127.0.0.1:8443"):
@@ -53,7 +55,7 @@ class SimulatedRobot:
                      self.name, *self.position)
 
     async def infect(self, parent_id: str = "PATIENT_ZERO",
-                     depth: int = 0):
+                     depth: int = 0, rssi: Optional[int] = None):
         """Mark this robot as infected and start the worm agent."""
         if self.infected:
             return
@@ -63,6 +65,13 @@ class SimulatedRobot:
         self.infection_depth = depth
         self._ble_device.is_infected = True
         await get_bus().mark_infected(self.address)
+
+        SimulatedRobot.infection_log.append({
+            "parent_id": parent_id,
+            "child_id": self.robot_id,
+            "rssi": rssi,
+            "time": time.time(),
+        })
 
         logger.info("Robot %s INFECTED (parent=%s, depth=%d)",
                      self.name, parent_id, depth)
@@ -104,6 +113,7 @@ class SimulatedRobot:
                     await target_robot.infect(
                         parent_id=self.robot_id,
                         depth=self.infection_depth + 1,
+                        rssi=target.rssi,
                     )
 
             # Jittered sleep between propagation attempts

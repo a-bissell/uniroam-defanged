@@ -17,8 +17,9 @@ import random
 import sys
 from typing import Dict, Optional
 
-from simulator.virtual_ble import get_bus, reset_bus, VirtualBLEDevice
+from simulator.virtual_ble import get_bus, reset_bus
 from simulator.robot_simulator import SimulatedRobot
+from simulator.display import SwarmDisplay
 
 logger = logging.getLogger("simulator")
 
@@ -35,6 +36,9 @@ async def run_simulation(count: int = 8, auto_infect: str = None,
     """Set up and run the virtual swarm."""
     reset_bus()
     _robots.clear()
+    SimulatedRobot.infection_log.clear()
+
+    display = SwarmDisplay(spread_radius=spread_radius)
 
     # Create robots in a random cluster
     for i in range(count):
@@ -53,6 +57,7 @@ async def run_simulation(count: int = 8, auto_infect: str = None,
         )
         _robots[address] = robot
         await robot.register()
+        display.add_robot(robot_id, name, position[0], position[1])
 
     logger.info("Created %d simulated robots", count)
 
@@ -73,25 +78,49 @@ async def run_simulation(count: int = 8, auto_infect: str = None,
             logger.error("Robot %s not found", auto_infect)
             return
 
-    # Monitor loop
+    # Sync initial infection events into display
+    events_synced = 0
+
+    # Monitor loop with live display
     try:
         while True:
+            # Sync new infection events from the robots into the display
+            while events_synced < len(SimulatedRobot.infection_log):
+                ev = SimulatedRobot.infection_log[events_synced]
+                display.record_infection(
+                    ev["parent_id"], ev["child_id"], ev.get("rssi"),
+                )
+                events_synced += 1
+
+            display.render()
+
             infected = bus.get_infection_count()
             total = bus.get_total_count()
-            pct = (infected / total * 100) if total > 0 else 0
-
-            print(f"\r  Swarm: {infected}/{total} infected ({pct:.0f}%)  ", end="")
 
             if infected >= total:
-                print(f"\n\n  Propagation complete: {total}/{total} infected")
+                await asyncio.sleep(0.5)
+                # Final sync
+                while events_synced < len(SimulatedRobot.infection_log):
+                    ev = SimulatedRobot.infection_log[events_synced]
+                    display.record_infection(
+                        ev["parent_id"], ev["child_id"], ev.get("rssi"),
+                    )
+                    events_synced += 1
+                display.render()
                 break
 
-            await asyncio.sleep(2.0)
+            await asyncio.sleep(1.0)
 
     except KeyboardInterrupt:
-        infected = bus.get_infection_count()
-        total = bus.get_total_count()
-        print(f"\n\n  Stopped: {infected}/{total} infected")
+        while events_synced < len(SimulatedRobot.infection_log):
+            ev = SimulatedRobot.infection_log[events_synced]
+            display.record_infection(
+                ev["parent_id"], ev["child_id"], ev.get("rssi"),
+            )
+            events_synced += 1
+        display.render()
+        print()
+        print("  Ctrl-C: simulation stopped")
 
 
 def main():
@@ -120,13 +149,6 @@ def main():
 
     if not args.interactive and not args.auto_infect:
         args.auto_infect = "SIM_000"
-
-    print()
-    print("  UniRoam (Defanged) - Virtual Swarm Simulator")
-    print(f"  Robots: {args.count}  |  Radius: {args.spread_radius}m")
-    if args.auto_infect:
-        print(f"  Patient zero: {args.auto_infect}")
-    print()
 
     asyncio.run(run_simulation(
         count=args.count,
