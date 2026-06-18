@@ -12,7 +12,8 @@ Alexander Bissell - June 11, 2026
 | CVE | Description | Researcher(s) | Status |
 |-----|-------------|----------------|--------|
 | [CVE-2025-35027](https://nvd.nist.gov/vuln/detail/CVE-2025-35027) | Unitree BLE WiFi config command injection | Bin4ry, h0stile, legion1581 | Patched |
-| [CVE-2026-27509](https://nvd.nist.gov/vuln/detail/CVE-2026-27509) | programming_actuator unauthenticated RCE | Boschko, Ruikai Peng | Patched |
+| [CVE-2026-27509](https://nvd.nist.gov/vuln/detail/CVE-2026-27509) | programming_actuator unauthenticated RCE (via DDS) | Boschko, Ruikai Peng | Patched |
+| CVE pending | Unauthenticated WebRTC signaling (port 9991 LAN access) | Alexander Bissell | Reported 2026-05-04 |
 | CVE pending | SDP attribute-name heap overflow (AWS KVS WebRTC SDK) | Alexander Bissell | Patched upstream |
 
 ## Related research
@@ -25,4 +26,5 @@ Alexander Bissell - June 11, 2026
 
 - [Canopy](https://github.com/a-bissell/canopy) - Self-hosted fleet management (defensive)
 - [UnLeash Lite](https://github.com/a-bissell/UnLeash-Lite) - WebRTC jailbreak tool (right-to-repair)
+- [go2-webrtc-signaling](https://github.com/a-bissell/go2-webrtc-signaling) - WebRTC signaling vulnerability disclosure and PoCs
 - [UniRoam Defanged](https://github.com/a-bissell/uniroam-defanged) - This repository (educational)

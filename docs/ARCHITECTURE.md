@@ -29,13 +29,13 @@ The entire Unitree product line shared the same hardcoded AES key, IV, and hands
 
 **UniRoam's use:** Primary initial access vector. BLE range made this suitable for conference/event scenarios and robot-to-robot propagation.
 
-### 2. WebRTC data channel (CVE-2026-27509)
+### 2. WebRTC signaling bypass (CVE pending) + programming_actuator RCE (CVE-2026-27509)
 
-**Discovery:** Boschko, Ruikai Peng
+The `programming_actuator` service accepts and executes arbitrary Python code via DDS with no authentication. This was originally discovered by Boschko and Ruikai Peng (CVE-2026-27509) through direct DDS topic subscription.
 
-The `programming_actuator` service accepts and executes arbitrary Python code uploaded via the WebRTC data channel, with no authentication. The `webrtc_bridge` service sits inside the DDS security perimeter and forwards messages between the WebRTC data channel and the internal DDS bus without filtering.
+Separately, the Go2's WebRTC signaling server on port 9991 accepts session establishment from any device on the local network with no authentication. The RSA public key needed to construct a valid encrypted SDP offer is served openly. Any LAN host can establish a full WebRTC data channel, and the `webrtc_bridge` service forwards messages between the data channel and the internal DDS bus without filtering. This means `programming_actuator` is reachable from the LAN via WebRTC, without requiring direct DDS access. This unauthenticated signaling finding is a separate vulnerability (CVE pending at MITRE, reported 2026-05-04). See [go2-webrtc-signaling](https://github.com/a-bissell/go2-webrtc-signaling) for the full disclosure.
 
-**UniRoam's use:** LAN propagation vector. Once a worm agent had network access on the robot subnet, it could exploit other robots via their signaling endpoint (port 9991) without needing BLE range.
+**UniRoam's use:** LAN propagation vector. Once a worm agent had network access on the robot subnet, it connected to other robots' signaling endpoints (port 9991), established a WebRTC data channel, and delivered payloads to `programming_actuator` through the bridge, without needing BLE range or direct DDS access.
 
 ### 3. SDP heap overflow (CVE pending, patched)
 
