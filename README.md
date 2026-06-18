@@ -51,7 +51,6 @@ All exploit primitives, keys, and operational artifacts have been stripped:
 - **Android app** removed (contained working BLE exploit in Kotlin)
 - **C2 server and dashboard** not included. Architecture is documented in [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
-The stub implementations are clearly marked and explain what the real version did without providing the means to do it.
 
 ## Quick start
 
